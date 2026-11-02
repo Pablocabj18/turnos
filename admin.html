@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Panel de turnos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <section id="login" class="card" hidden>
+      <h2>Ingresar al panel</h2>
+      <form id="login-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn block" type="submit">Entrar</button>
+        <p id="login-error" class="error" hidden></p>
+      </form>
+    </section>
+
+    <div id="app" hidden>
+      <div class="toolbar">
+        <div>
+          <h1 style="margin:0;font-size:1.5rem" id="title">Panel</h1>
+          <span class="muted small" id="mode"></span>
+        </div>
+        <button class="btn ghost sm" id="logout" type="button" hidden>Salir</button>
+      </div>
+
+      <section class="card">
+        <label for="public-link">Link para tus clientes</label>
+        <div class="linkbox">
+          <input id="public-link" type="text" readonly>
+          <button class="btn sm" id="copy-link" type="button">Copiar</button>
+        </div>
+        <p class="muted small" style="margin:8px 0 0">Ponelo en tu Instagram, en el estado de WhatsApp o en un QR en el local.</p>
+      </section>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-tab="bookings">Turnos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="settings">Configuración</button>
+      </div>
+
+      <section id="tab-bookings" class="card">
+        <div class="toolbar" style="margin-bottom:0">
+          <h2 style="margin:0">Próximos turnos</h2>
+          <button class="btn ghost sm" id="refresh" type="button">Actualizar</button>
+        </div>
+        <div id="bookings"></div>
+      </section>
+
+      <form id="tab-settings" hidden>
+        <section class="card">
+          <h2>Tu negocio</h2>
+          <div class="grid-2">
+            <div class="field">
+              <label for="s-name">Nombre</label>
+              <input id="s-name" type="text" maxlength="60" required>
+            </div>
+            <div class="field">
+              <label for="s-address">Dirección (opcional)</label>
+              <input id="s-address" type="text" maxlength="100">
+            </div>
+            <div class="field">
+              <label for="s-wa">Tu WhatsApp, con código de país</label>
+              <input id="s-wa" type="tel" placeholder="Ej: 5491122334455" maxlength="20">
+            </div>
+            <div class="field">
+              <label for="s-slot">Turnos cada</label>
+              <select id="s-slot">
+                <option value="15">15 minutos</option>
+                <option value="20">20 minutos</option>
+                <option value="30">30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">1 hora</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="s-days">Se puede reservar con hasta (días)</label>
+              <input id="s-days" type="number" min="1" max="60">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Días y horarios</h2>
+          <p class="muted small" style="margin-top:-6px">La pausa es opcional (por ejemplo, el almuerzo).</p>
+          <div id="hours"></div>
+        </section>
+
+        <section class="card">
+          <h2>Servicios</h2>
+          <div class="service-row muted small" aria-hidden="true">
+            <span>Nombre</span><span>Minutos</span><span>Precio</span><span></span>
+          </div>
+          <div id="services"></div>
+          <button class="btn ghost sm" type="button" id="add-service">+ Agregar servicio</button>
+        </section>
+
+        <button class="btn block" type="submit" id="save">Guardar cambios</button>
+        <p id="save-error" class="error" hidden></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
