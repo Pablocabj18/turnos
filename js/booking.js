@@ -5,7 +5,7 @@
   const $ = (s) => document.querySelector(s);
   const el = U.el;
 
-  const state = { settings: null, busy: [], service: null, day: null, time: null };
+  const state = { settings: null, busy: [], service: null, day: null, time: null, month: null };
 
   function setPressed(container, btn) {
     container.querySelectorAll(".opt").forEach((b) => b.setAttribute("aria-pressed", "false"));
@@ -32,6 +32,8 @@
           state.service = svc;
           state.day = null;
           state.time = null;
+          const today = new Date();
+          state.month = new Date(today.getFullYear(), today.getMonth(), 1);
           setPressed(box, btn);
           renderDays();
           $("#step-day").hidden = false;
@@ -50,16 +52,31 @@
     }
   }
 
+  // Calendario del mes visible (state.month = primer día del mes).
   function renderDays() {
     const box = $("#days");
     const now = new Date();
-    box.replaceChildren(...daysRange().map((day) => {
-      const d = U.parseDay(day);
-      const free = U.availableSlots(state.settings, day, state.service.duration, state.busy, now);
+    const range = daysRange();
+    const first = range[0], last = range[range.length - 1];
+    const year = state.month.getFullYear(), month = state.month.getMonth();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const offset = (state.month.getDay() + 6) % 7; // lunes = primera columna
+
+    $("#month-label").textContent = U.MONTHS[month][0].toUpperCase() + U.MONTHS[month].slice(1) + " " + year;
+    const monthKey = (d) => d.getFullYear() * 12 + d.getMonth();
+    $("#prev-month").disabled = monthKey(state.month) <= monthKey(U.parseDay(first));
+    $("#next-month").disabled = monthKey(state.month) >= monthKey(U.parseDay(last));
+
+    const blanks = Array.from({ length: offset }, () => el("span"));
+    box.replaceChildren(...blanks, ...Array.from({ length: lastDate }, (_, i) => {
+      const day = U.dateKey(new Date(year, month, i + 1));
+      const inRange = day >= first && day <= last;
+      const free = inRange ? U.availableSlots(state.settings, day, state.service.duration, state.busy, now) : [];
       const btn = el("button", {
-        class: "opt day", type: "button", "aria-pressed": "false",
+        class: "opt day" + (day === first ? " today" : ""), type: "button",
+        "aria-pressed": String(day === state.day),
+        "aria-label": U.formatDayLong(day) + (free.length ? ", " + free.length + " horarios libres" : ", sin horarios"),
         disabled: free.length === 0,
-        title: free.length ? free.length + " horarios libres" : "Sin horarios",
         onclick: () => {
           state.day = day;
           state.time = null;
@@ -69,13 +86,17 @@
           $("#step-form").hidden = true;
           $("#step-time").scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
-      },
-        el("span", { class: "dow" }, U.DAY_SHORT[d.getDay()]),
-        el("span", { class: "num" }, d.getDate())
-      );
+      }, i + 1);
       return btn;
     }));
   }
+
+  function changeMonth(delta) {
+    state.month = new Date(state.month.getFullYear(), state.month.getMonth() + delta, 1);
+    renderDays();
+  }
+  $("#prev-month").addEventListener("click", () => changeMonth(-1));
+  $("#next-month").addEventListener("click", () => changeMonth(1));
 
   function renderTimes() {
     const box = $("#times");

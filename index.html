@@ -26,7 +26,17 @@
 
       <section class="card" id="step-day" hidden>
         <h2><span class="step-num">2</span> Elegí el día</h2>
-        <div id="days" class="days"></div>
+        <div class="cal">
+          <div class="cal-head">
+            <button class="btn ghost sm" type="button" id="prev-month" aria-label="Mes anterior">‹</button>
+            <strong id="month-label" aria-live="polite"></strong>
+            <button class="btn ghost sm" type="button" id="next-month" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="cal-grid cal-dow" aria-hidden="true">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div id="days" class="cal-grid"></div>
+        </div>
       </section>
 
       <section class="card" id="step-time" hidden>

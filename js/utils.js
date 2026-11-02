@@ -94,6 +94,6 @@
 
   window.Utils = {
     pad, toMin, fromMin, dateKey, parseDay, addDays, formatDayLong, money, waLink, el,
-    availableSlots, DAY_NAMES, DAY_SHORT
+    availableSlots, DAY_NAMES, DAY_SHORT, MONTHS
   };
 })();

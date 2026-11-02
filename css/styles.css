@@ -81,7 +81,6 @@ header.top p { margin: 0; color: var(--muted); }
 .options { display: grid; gap: 10px; }
 .options.services { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 .options.times { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
-.days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
 
 .opt {
   font: inherit; color: inherit; text-align: left;
@@ -98,9 +97,16 @@ header.top p { margin: 0; color: var(--muted); }
 .opt strong { display: block; }
 .opt .meta { color: var(--muted); font-size: .875rem; }
 
-.day { flex: 0 0 64px; text-align: center; padding: 10px 6px; scroll-snap-align: start; }
-.day .dow { font-size: .75rem; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
-.day .num { font-size: 1.3rem; font-weight: 700; display: block; }
+/* Calendario mensual */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-head strong { font-size: 1.05rem; }
+.cal-head .btn { min-width: 40px; font-size: 1.1rem; }
+.cal-head .btn:disabled { visibility: hidden; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-dow { margin-bottom: 6px; }
+.cal-dow span { text-align: center; font-size: .75rem; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
+.day { text-align: center; padding: 10px 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .time { text-align: center; padding: 10px 6px; font-variant-numeric: tabular-nums; font-weight: 600; }
 
 /* Formularios */
