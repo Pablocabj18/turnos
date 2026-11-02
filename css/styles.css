@@ -204,3 +204,11 @@ input:focus, select:focus, .opt:focus-visible, .btn:focus-visible {
   .service-row input:first-child { grid-column: 1 / -1; }
   .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* Etiqueta de turno fijo */
+.tag {
+  display: inline-block; margin-left: 8px; vertical-align: 2px;
+  font-size: .7rem; font-weight: 600;
+  color: var(--accent); background: var(--accent-soft);
+  padding: 1px 8px; border-radius: 99px;
+}

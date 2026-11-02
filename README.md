@@ -3,10 +3,14 @@
 Sistema simple de reservas: el cliente elige servicio, día y horario libre; el peluquero ve sus turnos y configura su agenda desde un panel.
 
 - `index.html`: página pública de reservas (el link que se comparte con los clientes).
-- `admin.html`: panel del peluquero (turnos, horarios, pausas, servicios y precios).
+- `admin.html`: panel del peluquero (turnos, turnos fijos, horarios, pausas, servicios y precios).
 - `supabase/schema.sql`: base de datos.
 
 Funciona 100% en GitHub Pages (sin servidor propio) y la base de datos es **gratis** con el plan free de Supabase.
+
+## Turnos fijos
+
+En el panel, pestaña **Turnos fijos**, se cargan los clientes que vienen siempre el mismo día y hora: todas las semanas, cada 2 semanas o cada 4 semanas. Ese horario queda ocupado automáticamente. Si un día no viene, en **Turnos** se toca **Liberar este día** y queda libre sólo esa fecha.
 
 ## Modo demo
 

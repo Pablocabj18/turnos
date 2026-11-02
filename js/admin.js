@@ -5,6 +5,9 @@
   const $ = (s) => document.querySelector(s);
   const el = U.el;
   const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+  // "los lunes", "los sábados": sólo sábado y domingo cambian en plural.
+  const dayPlural = (dow) => U.DAY_NAMES[dow] + (dow === 0 || dow === 6 ? "s" : "");
+  const EVERY_TEXT = { 1: "Todas las semanas", 2: "Cada 2 semanas", 4: "Cada 4 semanas" };
 
   let settings = null;
 
@@ -38,16 +41,48 @@
     tab.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
       $("#tab-bookings").hidden = tab.dataset.tab !== "bookings";
+      $("#tab-fixed").hidden = tab.dataset.tab !== "fixed";
       $("#tab-settings").hidden = tab.dataset.tab !== "settings";
+      if (tab.dataset.tab === "fixed") prepareFixedForm();
     });
   });
 
   // ---------- Turnos ----------
+  function bookingActions(b) {
+    const remind = el("a", {
+      class: "btn ghost sm", target: "_blank", rel: "noopener",
+      href: U.waLink(b.phone, "Hola " + b.name + "! Te recuerdo tu turno en " + settings.businessName +
+        " el " + U.formatDayLong(b.day) + " a las " + b.time + " hs. ¡Te esperamos!")
+    }, "Recordar");
+
+    if (b.fixed) {
+      return [remind, el("button", {
+        class: "btn danger sm", type: "button",
+        onclick: async () => {
+          if (!confirm("¿Liberar el turno fijo de " + b.name + " sólo el " + U.formatDayLong(b.day) + "? Los demás siguen reservados.")) return;
+          await S.skipFixed(b.fixedId, b.day);
+          toast("Turno liberado ese día");
+          renderBookings();
+        }
+      }, "Liberar este día")];
+    }
+    return [remind, el("button", {
+      class: "btn danger sm", type: "button",
+      onclick: async () => {
+        if (!confirm("¿Cancelar el turno de " + b.name + " (" + b.time + ")?")) return;
+        await S.cancelBooking(b.id);
+        toast("Turno cancelado");
+        renderBookings();
+      }
+    }, "Cancelar")];
+  }
+
   async function renderBookings() {
     const box = $("#bookings");
     let list;
     try {
-      list = await S.listBookings(U.dateKey(new Date()));
+      const today = new Date();
+      list = await S.listBookings(U.dateKey(today), U.dateKey(U.addDays(today, Number(settings.daysAhead) || 14)));
     } catch (ex) {
       box.replaceChildren(el("p", { class: "error" }, "No se pudieron cargar los turnos."));
       return;
@@ -66,31 +101,155 @@
         items.map((b) => el("div", { class: "booking" },
           el("span", { class: "when" }, b.time),
           el("div", { class: "who" },
-            el("strong", {}, b.name),
+            el("strong", {}, b.name, b.fixed && el("span", { class: "tag" }, "Fijo")),
             el("div", { class: "meta" }, b.service + " · " + b.duration + " min · " + b.phone)
           ),
-          el("div", { class: "acts" },
-            el("a", {
-              class: "btn ghost sm", target: "_blank", rel: "noopener",
-              href: U.waLink(b.phone, "Hola " + b.name + "! Te recuerdo tu turno en " + settings.businessName +
-                " el " + U.formatDayLong(b.day) + " a las " + b.time + " hs. ¡Te esperamos!")
-            }, "Recordar"),
-            el("button", {
-              class: "btn danger sm", type: "button",
-              onclick: async () => {
-                if (!confirm("¿Cancelar el turno de " + b.name + " (" + b.time + ")?")) return;
-                await S.cancelBooking(b.id);
-                toast("Turno cancelado");
-                renderBookings();
-              }
-            }, "Cancelar")
-          )
+          el("div", { class: "acts" }, bookingActions(b))
         ))
       )
     ));
   }
 
   $("#refresh").addEventListener("click", renderBookings);
+
+  // ---------- Turnos fijos ----------
+  let fixedList = [];
+
+  function nextDateFor(dow) {
+    const t = new Date();
+    return U.dateKey(U.addDays(t, (dow - t.getDay() + 7) % 7));
+  }
+
+  const timesClash = (a, b) =>
+    U.toMin(a.time) < U.toMin(b.time) + Number(b.duration) && U.toMin(a.time) + Number(a.duration) > U.toMin(b.time);
+
+  function fixedClash(f) {
+    return fixedList.find((x) => x.id !== f.id && Number(x.dow) === Number(f.dow) &&
+      (!x.until || x.until >= f.since) && timesClash(f, x));
+  }
+
+  function selectedService() {
+    return settings.services.find((s) => s.id === $("#f-service").value);
+  }
+
+  function refreshFixedTimes() {
+    const dow = Number($("#f-dow").value);
+    const svc = selectedService();
+    const sel = $("#f-time");
+    if (!svc) {
+      sel.replaceChildren();
+      return;
+    }
+    // new Date(0) para no descartar horarios "pasados" de hoy: el turno se repite.
+    const since = $("#f-since").value || nextDateFor(dow);
+    const times = U.availableSlots(settings, nextDateFor(dow), Number(svc.duration), [], new Date(0))
+      .filter((t) => !fixedClash({ dow, time: t, duration: svc.duration, since }));
+    sel.replaceChildren(...(times.length
+      ? times.map((t) => el("option", { value: t }, t))
+      : [el("option", { value: "" }, "Sin horarios libres ese día")]));
+  }
+
+  function renderFixed() {
+    const box = $("#fixed-list");
+    if (!fixedList.length) {
+      box.replaceChildren(el("p", { class: "empty" }, "Todavía no hay turnos fijos."));
+      return;
+    }
+    box.replaceChildren(...WEEK_ORDER.map((dow) => {
+      const items = fixedList.filter((f) => Number(f.dow) === dow).sort((a, b) => a.time.localeCompare(b.time));
+      if (!items.length) return null;
+      return el("div", { class: "day-group" },
+        el("h3", {}, dayPlural(dow)),
+        items.map((f) => el("div", { class: "booking" },
+          el("span", { class: "when" }, f.time),
+          el("div", { class: "who" },
+            el("strong", {}, f.name),
+            el("div", { class: "meta" }, f.service + " · " + EVERY_TEXT[f.every || 1].toLowerCase() + " · " + f.phone +
+              " · desde el " + U.formatDayLong(f.since).toLowerCase())
+          ),
+          el("div", { class: "acts" },
+            el("button", {
+              class: "btn danger sm", type: "button",
+              onclick: async () => {
+                if (!confirm("¿Dar de baja el turno fijo de " + f.name + " (" + dayPlural(dow).toLowerCase() + " " + f.time + ")?")) return;
+                await S.deleteFixed(f.id);
+                toast("Turno fijo dado de baja");
+                await loadFixed();
+                renderBookings();
+              }
+            }, "Dar de baja")
+          )
+        ))
+      );
+    }).filter(Boolean));
+  }
+
+  async function loadFixed() {
+    fixedList = await S.listFixed();
+    renderFixed();
+    refreshFixedTimes();
+  }
+
+  function prepareFixedForm() {
+    if (!$("#f-dow").options.length) {
+      $("#f-dow").replaceChildren(...WEEK_ORDER.map((d) => el("option", { value: String(d) }, dayPlural(d).toLowerCase())));
+      $("#f-dow").value = String(new Date().getDay());
+    }
+    const current = $("#f-service").value;
+    $("#f-service").replaceChildren(...settings.services.map((s) => el("option", { value: s.id }, s.name + " · " + s.duration + " min")));
+    if (current) $("#f-service").value = current;
+    if (!$("#f-since").value) $("#f-since").value = nextDateFor(Number($("#f-dow").value));
+    loadFixed();
+  }
+
+  $("#f-dow").addEventListener("change", () => {
+    $("#f-since").value = nextDateFor(Number($("#f-dow").value));
+    refreshFixedTimes();
+  });
+  $("#f-service").addEventListener("change", refreshFixedTimes);
+  $("#f-since").addEventListener("change", refreshFixedTimes);
+
+  $("#fixed-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("#fixed-error");
+    err.hidden = true;
+    try {
+      const dow = Number($("#f-dow").value);
+      const svc = selectedService();
+      const time = $("#f-time").value;
+      const since = $("#f-since").value;
+      const every = Number($("#f-every").value) || 1;
+      const name = $("#f-name").value.trim();
+      const phone = $("#f-phone").value.trim();
+      if (!svc || !time) throw new Error("Elegí el servicio y un horario libre.");
+      if (!since) throw new Error("Elegí desde qué fecha empieza.");
+      if (U.parseDay(since).getDay() !== dow) throw new Error("La fecha de inicio tiene que caer " + U.DAY_NAMES[dow].toLowerCase() + ".");
+      if (name.length < 2) throw new Error("Escribí el nombre.");
+      if (phone.replace(/\D/g, "").length < 8) throw new Error("Escribí un teléfono válido.");
+
+      const f = { dow, every, time, duration: Number(svc.duration), service: svc.name, name, phone, since, until: "", skips: [] };
+      if (fixedClash(f)) throw new Error("Ya hay otro turno fijo ese día a esa hora.");
+
+      // Turnos sueltos ya sacados en los días donde caería este fijo.
+      const ahead = await S.listBookings(since, U.dateKey(U.addDays(U.parseDay(since), 90)));
+      const blocked = ahead.filter((b) => !b.fixed && S.fixedOccurs(f, b.day) && timesClash(f, b));
+      if (blocked.length) {
+        throw new Error("Choca con turnos ya sacados: " +
+          blocked.slice(0, 3).map((b) => U.formatDayLong(b.day) + " " + b.time + " (" + b.name + ")").join(", ") +
+          ". Cancelalos o elegí otra fecha de inicio.");
+      }
+
+      await S.saveFixed(f);
+      $("#f-name").value = "";
+      $("#f-phone").value = "";
+      toast("Turno fijo guardado");
+      await loadFixed();
+      renderBookings();
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+    }
+  });
 
   // ---------- Configuración ----------
   function renderHours() {

@@ -45,6 +45,7 @@
 
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-tab="bookings">Turnos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="fixed">Turnos fijos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="settings">Configuración</button>
       </div>
 
@@ -55,6 +56,54 @@
         </div>
         <div id="bookings"></div>
       </section>
+
+      <div id="tab-fixed" hidden>
+        <form id="fixed-form" class="card" novalidate>
+          <h2>Nuevo turno fijo</h2>
+          <p class="muted small" style="margin-top:-6px">Para clientes que vienen siempre el mismo día y a la misma hora.</p>
+          <div class="grid-2">
+            <div class="field">
+              <label for="f-dow">Día</label>
+              <select id="f-dow"></select>
+            </div>
+            <div class="field">
+              <label for="f-every">Frecuencia</label>
+              <select id="f-every">
+                <option value="1">Todas las semanas</option>
+                <option value="2">Cada 2 semanas</option>
+                <option value="4">Cada 4 semanas</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-service">Servicio</label>
+              <select id="f-service"></select>
+            </div>
+            <div class="field">
+              <label for="f-time">Horario</label>
+              <select id="f-time"></select>
+            </div>
+            <div class="field">
+              <label for="f-since">A partir del</label>
+              <input id="f-since" type="date" required>
+            </div>
+            <div class="field">
+              <label for="f-name">Nombre del cliente</label>
+              <input id="f-name" type="text" maxlength="80" required>
+            </div>
+            <div class="field">
+              <label for="f-phone">WhatsApp</label>
+              <input id="f-phone" type="tel" maxlength="30" required>
+            </div>
+          </div>
+          <button class="btn block" type="submit">Guardar turno fijo</button>
+          <p id="fixed-error" class="error" hidden></p>
+        </form>
+
+        <section class="card">
+          <h2>Turnos fijos</h2>
+          <div id="fixed-list"></div>
+        </section>
+      </div>
 
       <form id="tab-settings" hidden>
         <section class="card">
