@@ -271,7 +271,7 @@
         ),
         el("div", { class: "times-in" },
           timeInput("start", v.start), el("span", { class: "time-separator opening-separator" }, "a"), timeInput("end", v.end),
-          el("span", { class: "muted small pause-label" }, "Pausa"),
+          el("span", { class: "muted small pause-label" }, "Pausa (opcional)"),
           timeInput("breakStart", v.breakStart), el("span", { class: "time-separator break-separator" }, "a"), timeInput("breakEnd", v.breakEnd)
         )
       );
@@ -293,11 +293,7 @@
         el("span", {}, "Precio"),
         el("input", { type: "number", "data-field": "price", value: svc.price != null ? String(svc.price) : "", min: "0", "aria-label": "Precio" })
       ),
-      el("button", { class: "btn danger sm service-remove", type: "button", onclick: () => row.remove(), "aria-label": "Quitar servicio" },
-        el("svg", { viewBox: "0 0 24 24", width: "20", height: "20", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" },
-          el("path", { d: "M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" })
-        )
-      )
+      el("button", { class: "btn danger sm service-remove", type: "button", onclick: () => row.remove(), "aria-label": "Quitar servicio" }, "Quitar")
     );
     return row;
   }

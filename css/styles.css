@@ -208,7 +208,6 @@ input:focus, select:focus, .opt:focus-visible, .btn:focus-visible {
   .card { padding: 16px; margin-bottom: 12px; }
   .card h2 { margin-bottom: 12px; }
   .tabs {
-    position: sticky; top: 0; z-index: 5;
     margin: 4px -4px 12px; padding: 4px;
     background: var(--bg); border-radius: 12px;
     scrollbar-width: none;
@@ -232,7 +231,7 @@ input:focus, select:focus, .opt:focus-visible, .btn:focus-visible {
   .pause-label { grid-column: 1 / -1; grid-row: 2; margin-top: 2px; }
   .service-row.muted { display: none; }
   .service-row[data-id] {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 66px;
     grid-template-areas: "name name remove" "duration price remove";
     gap: 10px 8px; align-items: end;
     padding: 12px; margin: 0;
@@ -244,7 +243,8 @@ input:focus, select:focus, .opt:focus-visible, .btn:focus-visible {
   .service-row[data-id] .service-price { grid-area: price; }
   .service-row[data-id] .service-remove {
     grid-area: remove; align-self: center;
-    width: 44px; height: 44px; min-width: 44px; padding: 0;
+    width: 66px; min-width: 66px; min-height: 44px; padding: 6px;
+    font-size: .78rem;
   }
   .service-row[data-id] .service-field > span {
     display: block; margin-bottom: 5px;
@@ -257,6 +257,7 @@ input:focus, select:focus, .opt:focus-visible, .btn:focus-visible {
   .blocked-date-form button { grid-column: 1 / -1; min-height: 46px; }
   .linkbox:not(.blocked-date-form) { align-items: stretch; }
   .grid-2 { grid-template-columns: 1fr; }
+  #tab-settings { padding-bottom: 120px; }
 }
 
 /* Etiqueta de turno fijo */
