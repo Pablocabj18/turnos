@@ -24,6 +24,7 @@
     err.hidden = true;
     try {
       await S.signIn($("#email").value.trim(), $("#password").value);
+      if (!(await S.isAdmin())) throw new Error("not_admin");
       await showApp();
     } catch (ex) {
       err.textContent = "Email o contraseña incorrectos.";
@@ -370,6 +371,43 @@
     }
   });
 
+  async function renderBlockedDates() {
+    const box = $("#blocked-dates");
+    try {
+      const today = U.dateKey(new Date());
+      const dates = await S.listBlockedDates(today, U.dateKey(U.addDays(new Date(), 3650)));
+      box.replaceChildren(...(dates.length ? dates.map((item) => el("div", { class: "booking" },
+        el("div", { class: "who" }, el("strong", {}, U.formatDayLong(item.day)),
+          el("div", { class: "meta" }, item.reason || "Día cerrado")),
+        el("button", { class: "btn danger sm", type: "button", onclick: async () => {
+          await S.deleteBlockedDate(item.day); await renderBlockedDates(); await renderBookings();
+        } }, "Quitar")
+      )) : [el("p", { class: "empty" }, "No hay fechas bloqueadas.")]));
+    } catch (ex) {
+      box.replaceChildren(el("p", { class: "error" }, "No se pudieron cargar los días cerrados."));
+    }
+  }
+
+  $("#add-blocked-day").addEventListener("click", async () => {
+    const err = $("#blocked-error");
+    err.hidden = true;
+    const day = $("#blocked-day").value;
+    if (!day || day < U.dateKey(new Date())) {
+      err.textContent = "Elegí hoy o una fecha futura."; err.hidden = false; return;
+    }
+    try {
+      await S.saveBlockedDate(day, $("#blocked-reason").value.trim());
+      $("#blocked-day").value = ""; $("#blocked-reason").value = "";
+      await renderBlockedDates(); await renderBookings();
+      toast("Día bloqueado");
+    } catch (ex) {
+      err.textContent = String(ex.message).includes("fecha_con_turnos")
+        ? "Esa fecha tiene turnos reservados. Cancelalos o liberá los turnos fijos antes de bloquearla."
+        : "No se pudo bloquear la fecha.";
+      err.hidden = false;
+    }
+  });
+
   // ---------- Inicio ----------
   $("#copy-link").addEventListener("click", async () => {
     const input = $("#public-link");
@@ -391,10 +429,11 @@
     settings = await S.getSettings();
     $("#title").textContent = settings.businessName;
     renderSettings();
+    await renderBlockedDates();
     await renderBookings();
   }
 
   const session = await S.getSession().catch(() => null);
-  if (session) await showApp();
+  if (session && await S.isAdmin().catch(() => false)) await showApp();
   else $("#login").hidden = false;
 })();

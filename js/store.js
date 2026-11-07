@@ -36,6 +36,24 @@
     return a.day === b.day && at < bt + b.duration && at + a.duration > bt;
   }
 
+  function validateBooking(settings, b) {
+    const today = Utils.dateKey(new Date());
+    const limit = Utils.dateKey(Utils.addDays(new Date(), Math.min(60, Math.max(1, Number(settings.daysAhead) || 14))));
+    if (b.day < today || b.day > limit) throw new Error("fecha_invalida");
+    const service = settings.services.find((s) => s.name === b.service && Number(s.duration) === Number(b.duration));
+    if (!service) throw new Error("servicio_invalido");
+    const h = settings.hours[String(Utils.parseDay(b.day).getDay())];
+    if (!h) throw new Error("dia_cerrado");
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(b.time)) throw new Error("horario_invalido");
+    const start = Utils.toMin(h.start), end = Utils.toMin(h.end), time = Utils.toMin(b.time);
+    if (time < start || time + Number(b.duration) > end) throw new Error("fuera_de_horario");
+    if (h.breakStart && h.breakEnd && time < Utils.toMin(h.breakEnd) && time + Number(b.duration) > Utils.toMin(h.breakStart)) {
+      throw new Error("durante_pausa");
+    }
+    const step = Math.max(5, Number(settings.slotMinutes) || 30);
+    if ((time - start) % step) throw new Error("horario_invalido");
+  }
+
   // ¿El turno fijo cae ese día? Respeta el día de la semana, la frecuencia (cada 1, 2 o 4 semanas)
   // y los días que se liberaron.
   function fixedOccurs(f, day) {
@@ -90,14 +108,32 @@
     isRemote: false,
     async getSettings() { return withDefaults(lsGet(LS_SETTINGS, null)); },
     async saveSettings(s) { lsSet(LS_SETTINGS, s); },
+    async isAdmin() { return true; },
+    async listBlockedDates(from, to) {
+      return lsGet("turnos.blocked", []).filter((x) => x.day >= from && x.day <= to);
+    },
+    async saveBlockedDate(day, reason) {
+      const hasBooking = lsGet(LS_BOOKINGS, []).some((b) => b.status === "confirmed" && b.day === day);
+      const hasFixed = expandFixed(lsGet(LS_FIXED, []), day, day).length > 0;
+      if (hasBooking || hasFixed) throw new Error("fecha_con_turnos");
+      const all = lsGet("turnos.blocked", []).filter((x) => x.day !== day);
+      all.push({ day, reason: reason || "" }); lsSet("turnos.blocked", all);
+    },
+    async deleteBlockedDate(day) {
+      lsSet("turnos.blocked", lsGet("turnos.blocked", []).filter((x) => x.day !== day));
+    },
     async getBusy(from, to) {
       return lsGet(LS_BOOKINGS, [])
         .filter((b) => b.status === "confirmed" && b.day >= from && b.day <= to)
-        .concat(expandFixed(lsGet(LS_FIXED, []), from, to));
+        .concat(expandFixed(lsGet(LS_FIXED, []), from, to))
+        .concat(lsGet("turnos.blocked", []).filter((x) => x.day >= from && x.day <= to)
+          .map((x) => ({ day: x.day, time: "00:00", duration: 1440 })));
     },
     async createBooking(b) {
+      validateBooking(await this.getSettings(), b);
       const all = lsGet(LS_BOOKINGS, []);
-      const taken = all.filter((x) => x.status === "confirmed").concat(expandFixed(lsGet(LS_FIXED, []), b.day, b.day));
+      const taken = all.filter((x) => x.status === "confirmed").concat(expandFixed(lsGet(LS_FIXED, []), b.day, b.day))
+        .concat(lsGet("turnos.blocked", []).filter((x) => x.day === b.day).map((x) => ({ day: x.day, time: "00:00", duration: 1440 })));
       if (taken.some((x) => overlaps(b, x))) throw new Error("ocupado");
       const booking = Object.assign({ id: String(Date.now()), status: "confirmed" }, b);
       all.push(booking);
@@ -166,6 +202,18 @@
       async saveSettings(s) {
         check(await db.from("settings").upsert({ id: 1, data: s }));
       },
+      async isAdmin() {
+        return !!check(await db.rpc("is_app_admin"));
+      },
+      async listBlockedDates(from, to) {
+        return check(await db.from("blocked_dates").select("day,reason").gte("day", from).lte("day", to).order("day"));
+      },
+      async saveBlockedDate(day, reason) {
+        check(await db.from("blocked_dates").upsert({ day, reason: reason || "" }));
+      },
+      async deleteBlockedDate(day) {
+        check(await db.from("blocked_dates").delete().eq("day", day));
+      },
       async getBusy(from, to) {
         const rows = check(await db.rpc("get_busy", { d_from: from, d_to: to }));
         return rows.map((r) => ({ day: r.day, time: r.start_time, duration: r.duration }));
@@ -216,4 +264,5 @@
   const useRemote = cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase;
   window.Store = useRemote ? makeRemoteStore() : localStore;
   window.Store.fixedOccurs = fixedOccurs;
+  window.Store.validateBooking = validateBooking;
 })();

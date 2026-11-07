@@ -145,6 +145,18 @@
         </section>
 
         <section class="card">
+          <h2>Días cerrados</h2>
+          <p class="muted small" style="margin-top:-6px">Bloqueá una fecha completa por vacaciones, feriados o imprevistos.</p>
+          <div class="linkbox">
+            <input id="blocked-day" type="date" aria-label="Fecha a bloquear">
+            <input id="blocked-reason" type="text" maxlength="120" placeholder="Motivo (opcional)" aria-label="Motivo del cierre">
+            <button class="btn sm" type="button" id="add-blocked-day">Bloquear</button>
+          </div>
+          <div id="blocked-dates"></div>
+          <p id="blocked-error" class="error" hidden></p>
+        </section>
+
+        <section class="card">
           <h2>Servicios</h2>
           <div class="service-row muted small" aria-hidden="true">
             <span>Nombre</span><span>Minutos</span><span>Precio</span><span></span>
