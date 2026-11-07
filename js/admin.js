@@ -270,9 +270,9 @@
           U.DAY_NAMES[dow]
         ),
         el("div", { class: "times-in" },
-          timeInput("start", v.start), "a", timeInput("end", v.end),
-          el("span", { class: "muted small" }, "· pausa"),
-          timeInput("breakStart", v.breakStart), "a", timeInput("breakEnd", v.breakEnd)
+          timeInput("start", v.start), el("span", { class: "time-separator opening-separator" }, "a"), timeInput("end", v.end),
+          el("span", { class: "muted small pause-label" }, "Pausa"),
+          timeInput("breakStart", v.breakStart), el("span", { class: "time-separator break-separator" }, "a"), timeInput("breakEnd", v.breakEnd)
         )
       );
       return row;
@@ -281,10 +281,23 @@
 
   function serviceRow(svc) {
     const row = el("div", { class: "service-row", "data-id": svc.id },
-      el("input", { type: "text", "data-field": "name", value: svc.name, maxlength: "40", "aria-label": "Nombre del servicio" }),
-      el("input", { type: "number", "data-field": "duration", value: String(svc.duration), min: "5", max: "480", step: "5", "aria-label": "Duración en minutos" }),
-      el("input", { type: "number", "data-field": "price", value: svc.price != null ? String(svc.price) : "", min: "0", "aria-label": "Precio" }),
-      el("button", { class: "btn danger sm", type: "button", onclick: () => row.remove(), "aria-label": "Quitar servicio" }, "✕")
+      el("label", { class: "service-field service-name" },
+        el("span", {}, "Nombre"),
+        el("input", { type: "text", "data-field": "name", value: svc.name, maxlength: "40", "aria-label": "Nombre del servicio" })
+      ),
+      el("label", { class: "service-field service-duration" },
+        el("span", {}, "Minutos"),
+        el("input", { type: "number", "data-field": "duration", value: String(svc.duration), min: "5", max: "480", step: "5", "aria-label": "Duración en minutos" })
+      ),
+      el("label", { class: "service-field service-price" },
+        el("span", {}, "Precio"),
+        el("input", { type: "number", "data-field": "price", value: svc.price != null ? String(svc.price) : "", min: "0", "aria-label": "Precio" })
+      ),
+      el("button", { class: "btn danger sm service-remove", type: "button", onclick: () => row.remove(), "aria-label": "Quitar servicio" },
+        el("svg", { viewBox: "0 0 24 24", width: "20", height: "20", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" },
+          el("path", { d: "M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" })
+        )
+      )
     );
     return row;
   }
